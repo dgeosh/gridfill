@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Visualization</title>
+    </head>
+    <h1>Grid Fill Demo</h1>
+    <body>
+        I want to fill... <input type="text" placeholder="x,y" id="coords" />
+        <button id="fill">Fill!</button>
+        <br />
+        Dimensions... <input type="text" value="200x200" id="dims" />
+        <button id="resize">Set!</button>
+        <button id="new">New board</button>
+        <br />
+        Animation speed...
+        <input type="range" min="1" max="100" value="50" id="animationSpeed" />
+        Disable animation?<input type="checkbox" id="disable" /> <br /><br />
+        <canvas id="canvas" width="600" height="600"></canvas>
+        <br />
+        © Josh 2024.
+        <br />
+        Warning: Large boards cause slowdown due to HTML Canvas.
+        <script type="application/javascript">
+            let Xd = 200;
+            let Yd = 200;
+            let grid = Array(Yd);
+            for (let i = 0; i < Yd; i++) grid[i] = [];
+
+            function randomFillGrid() {
+                for (let i = 0; i < Yd; i++) {
+                    let row = grid[i];
+                    for (let i = 0; i < Xd; i++) {
+                        row[i] = (Math.random() * 2) | 0;
+                    }
+                }
+            }
+
+            randomFillGrid();
+
+            function fillHelper(x, y) {
+                if (y < grid.length && x < grid[0].length) {
+                    let s = new Set();
+                    fill(
+                        x,
+                        y,
+                        grid[y][x],
+                        s,
+                        !document.getElementById("disable").checked,
+                        document.getElementById("animationSpeed").value
+                    );
+                }
+            }
+
+            async function fill(x, y, val, s, animate, delay) {
+                let lastDegree = 0;
+                s.add(x + "," + y + "," + 0);
+
+                let count = 0;
+
+                while (s.size > 0) {
+                    let coords = s
+                        .entries()
+                        .next()
+                        .value[0].split(",")
+                        .map((x) => parseInt(x));
+                    grid[coords[1]][coords[0]] = (val + 1) % 2;
+                    console.log(coords);
+                    if (coords[1] < grid.length && coords[0] < grid[0].length) {
+                        let addNext = getNeighbors(coords[0], coords[1]);
+                        if (
+                            addNext[0] &&
+                            grid[coords[1] - 1][coords[0]] === val
+                        )
+                            s.add(
+                                coords[0] +
+                                    "," +
+                                    (coords[1] - 1) +
+                                    "," +
+                                    (coords[2] + 1)
+                            );
+                        if (
+                            addNext[1] &&
+                            grid[coords[1] + 1][coords[0]] === val
+                        )
+                            s.add(
+                                coords[0] +
+                                    "," +
+                                    (coords[1] + 1) +
+                                    "," +
+                                    (coords[2] + 1)
+                            );
+                        if (
+                            addNext[2] &&
+                            grid[coords[1]][coords[0] - 1] === val
+                        )
+                            s.add(
+                                coords[0] -
+                                    1 +
+                                    "," +
+                                    coords[1] +
+                                    "," +
+                                    (coords[2] + 1)
+                            );
+                        if (
+                            addNext[3] &&
+                            grid[coords[1]][coords[0] + 1] === val
+                        )
+                            s.add(
+                                coords[0] +
+                                    1 +
+                                    "," +
+                                    coords[1] +
+                                    "," +
+                                    (coords[2] + 1)
+                            );
+                    }
+                    s.delete(coords[0] + "," + coords[1] + "," + coords[2]);
+
+                    //animation
+                    if (animate && lastDegree != coords[2]) {
+                        let cv = document.getElementById("canvas");
+                        cv.width = Xd * 3;
+                        cv.height = Yd * 3;
+                        draw(gridToString(), Xd, Yd);
+                        await new Promise((r) => setTimeout(r, delay));
+                    }
+                    lastDegree = coords[2];
+                }
+            }
+
+            function gridToString() {
+                let s = "";
+                for (let i = 0; i < Yd; i++) {
+                    let row = grid[i];
+                    for (let i = 0; i < Xd; i++) {
+                        s += row[i];
+                    }
+                }
+                return s;
+            }
+
+            function getNeighbors(x, y) {
+                var ret = [false, false, false, false];
+                for (var i = 0; i < 4; i++) {
+                    ret[i] = true;
+                }
+                if (y === 0) ret[0] = false;
+                if (y === grid.length - 1) ret[1] = false;
+                if (x === 0) ret[2] = false;
+                if (x === grid[0].length - 1) ret[3] = false;
+                return ret;
+            }
+
+            function draw(str, xd, yd) {
+                //let dims = Document.getElementById("dims").value.split("x");
+                let string = gridToString();
+                let ctx = document.getElementById("canvas").getContext("2d");
+                ctx.scale(3, 3);
+                ctx.fillStyle = "#FFF"; // Fill with white first
+                ctx.fillRect(0, 0, xd, yd);
+                ctx.fillStyle = "#000";
+                for (let i = 0; i < xd; i++) {
+                    // Loop through each character
+                    for (let j = 0; j < yd; j++) {
+                        if (string[i * yd + j] == "1")
+                            // If the character is one,
+                            ctx.fillRect(i, j, 1, 1); // fill the pixel with black
+                    }
+                }
+            }
+
+            document.getElementById("resize").addEventListener("click", (e) => {
+                let cv = document.getElementById("canvas");
+                let dims = document.getElementById("dims").value.split("x");
+                if (cv.width == dims[0] * 3 && cv.height == dims[1] * 3) return;
+                Xd = dims[0];
+                Yd = dims[1];
+                cv.width = Xd * 3;
+                cv.height = Yd * 3;
+                grid = Array(Yd);
+                for (let i = 0; i < Yd; i++) grid[i] = [];
+                randomFillGrid();
+                draw(gridToString(), Xd, Yd);
+            });
+
+            document.getElementById("new").addEventListener("click", (e) => {
+                randomFillGrid();
+                let cv = document.getElementById("canvas");
+                cv.width = Xd * 3;
+                cv.height = Yd * 3;
+                draw(gridToString(), Xd, Yd);
+            });
+
+            document.getElementById("fill").addEventListener("click", (e) => {
+                let coords = document.getElementById("coords").value.split(",");
+                fillHelper(
+                    Number.parseInt(coords[0]),
+                    Number.parseInt(coords[1])
+                );
+                let cv = document.getElementById("canvas");
+                cv.width = Xd * 3;
+                cv.height = Yd * 3;
+                draw(gridToString(), Xd, Yd);
+            });
+
+            draw(gridToString(), Xd, Yd);
+        </script>
+    </body>
+</html>
