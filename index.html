@@ -26,6 +26,7 @@
             let Yd = 200;
             let grid = Array(Yd);
             for (let i = 0; i < Yd; i++) grid[i] = [];
+            let filling = false;
 
             function randomFillGrid() {
                 for (let i = 0; i < Yd; i++) {
@@ -39,7 +40,7 @@
             randomFillGrid();
 
             function fillHelper(x, y) {
-                if (y < grid.length && x < grid[0].length) {
+                if (!filling && y < grid.length && x < grid[0].length) {
                     let s = new Set();
                     fill(
                         x,
@@ -57,6 +58,7 @@
                 s.add(x + "," + y + "," + 0);
 
                 let count = 0;
+                filling = true;
 
                 while (s.size > 0) {
                     let coords = s
@@ -126,6 +128,7 @@
                     }
                     lastDegree = coords[2];
                 }
+                filling = false;
             }
 
             function gridToString() {
