@@ -18,7 +18,7 @@
         Disable animation?<input type="checkbox" id="disable" /> <br /><br />
         <canvas id="canvas" width="600" height="600"></canvas>
         <br />
-        © Josh 2024.
+        Made by Josh.
         <br />
         Warning: Large boards cause slowdown due to HTML Canvas.
         <script type="application/javascript">
@@ -65,7 +65,6 @@
                         .value[0].split(",")
                         .map((x) => parseInt(x));
                     grid[coords[1]][coords[0]] = (val + 1) % 2;
-                    console.log(coords);
                     if (coords[1] < grid.length && coords[0] < grid[0].length) {
                         let addNext = getNeighbors(coords[0], coords[1]);
                         if (
